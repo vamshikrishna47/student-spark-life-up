@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Clock, Coffee, Heart, Phone, Book, Moon, Sun } from 'lucide-react';
@@ -16,7 +15,7 @@ interface Reminder {
   description: string;
   time: string;
   enabled: boolean;
-  icon: React.ReactNode;
+  iconType: string; // Changed from icon React.ReactNode to string type for serialization
   category: 'health' | 'social' | 'values';
 }
 
@@ -27,10 +26,21 @@ const SelfCare = () => {
   const [reminders, setReminders] = useState<Reminder[]>(() => {
     const savedReminders = localStorage.getItem('selfCareReminders');
     if (savedReminders) {
-      return JSON.parse(savedReminders);
+      try {
+        return JSON.parse(savedReminders);
+      } catch (error) {
+        console.error("Failed to parse saved reminders:", error);
+        // Return default reminders if parsing fails
+        return getDefaultReminders();
+      }
     }
     
     // Default reminders
+    return getDefaultReminders();
+  });
+
+  // Helper function to get default reminders
+  const getDefaultReminders = (): Reminder[] => {
     return [
       {
         id: '1',
@@ -38,7 +48,7 @@ const SelfCare = () => {
         description: 'Stay hydrated throughout the day',
         time: '09:00',
         enabled: true,
-        icon: <Coffee className="h-5 w-5" />,
+        iconType: 'coffee',
         category: 'health'
       },
       {
@@ -47,7 +57,7 @@ const SelfCare = () => {
         description: 'Take time to connect with family',
         time: '18:00',
         enabled: true,
-        icon: <Phone className="h-5 w-5" />,
+        iconType: 'phone',
         category: 'social'
       },
       {
@@ -56,7 +66,7 @@ const SelfCare = () => {
         description: '10 minutes of mindfulness',
         time: '07:00',
         enabled: true,
-        icon: <Heart className="h-5 w-5" />,
+        iconType: 'heart',
         category: 'health'
       },
       {
@@ -65,7 +75,7 @@ const SelfCare = () => {
         description: 'Expand your mind with reading',
         time: '21:00',
         enabled: false,
-        icon: <Book className="h-5 w-5" />,
+        iconType: 'book',
         category: 'values'
       },
       {
@@ -74,7 +84,7 @@ const SelfCare = () => {
         description: 'Ensure you get enough sleep',
         time: '22:00',
         enabled: true,
-        icon: <Moon className="h-5 w-5" />,
+        iconType: 'moon',
         category: 'health'
       },
       {
@@ -83,14 +93,35 @@ const SelfCare = () => {
         description: 'Start your day with fresh air',
         time: '06:30',
         enabled: false,
-        icon: <Sun className="h-5 w-5" />,
+        iconType: 'sun',
         category: 'health'
       },
     ];
-  });
+  };
+
+  // Helper function to get icon component based on iconType
+  const getIconComponent = (iconType: string) => {
+    switch (iconType) {
+      case 'coffee':
+        return <Coffee className="h-5 w-5" />;
+      case 'phone':
+        return <Phone className="h-5 w-5" />;
+      case 'heart':
+        return <Heart className="h-5 w-5" />;
+      case 'book':
+        return <Book className="h-5 w-5" />;
+      case 'moon':
+        return <Moon className="h-5 w-5" />;
+      case 'sun':
+        return <Sun className="h-5 w-5" />;
+      default:
+        return <Heart className="h-5 w-5" />;
+    }
+  };
 
   // Save reminders to localStorage when they change
   useEffect(() => {
+    // Ensure we're only saving serializable data
     localStorage.setItem('selfCareReminders', JSON.stringify(reminders));
   }, [reminders]);
 
@@ -175,6 +206,7 @@ const SelfCare = () => {
                 <ReminderCard 
                   key={reminder.id}
                   reminder={reminder}
+                  getIconComponent={getIconComponent}
                   toggleReminder={toggleReminder}
                   updateReminderTime={updateReminderTime}
                 />
@@ -186,6 +218,7 @@ const SelfCare = () => {
                 <ReminderCard 
                   key={reminder.id}
                   reminder={reminder}
+                  getIconComponent={getIconComponent}
                   toggleReminder={toggleReminder}
                   updateReminderTime={updateReminderTime}
                 />
@@ -197,6 +230,7 @@ const SelfCare = () => {
                 <ReminderCard 
                   key={reminder.id}
                   reminder={reminder}
+                  getIconComponent={getIconComponent}
                   toggleReminder={toggleReminder}
                   updateReminderTime={updateReminderTime}
                 />
@@ -212,18 +246,19 @@ const SelfCare = () => {
 // Reminder Card Component
 interface ReminderCardProps {
   reminder: Reminder;
+  getIconComponent: (iconType: string) => React.ReactNode;
   toggleReminder: (id: string) => void;
   updateReminderTime: (id: string, newTime: string) => void;
 }
 
-const ReminderCard = ({ reminder, toggleReminder, updateReminderTime }: ReminderCardProps) => {
+const ReminderCard = ({ reminder, getIconComponent, toggleReminder, updateReminderTime }: ReminderCardProps) => {
   return (
     <Card className={`border ${reminder.enabled ? 'border-purple-light/50 bg-white' : 'border-gray-200 bg-gray-50'} transition-colors`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`rounded-full p-2 ${reminder.enabled ? 'bg-purple-light/20 text-purple' : 'bg-gray-200 text-gray-500'}`}>
-              {reminder.icon}
+              {getIconComponent(reminder.iconType)}
             </div>
             <div>
               <h3 className={`font-medium ${reminder.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
