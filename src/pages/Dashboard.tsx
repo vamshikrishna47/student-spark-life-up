@@ -88,6 +88,12 @@ const Dashboard = () => {
       title: "Mood logged successfully",
       description: `You're feeling ${mood === 'happy' ? 'happy 😊' : mood === 'neutral' ? 'neutral 😐' : 'sad 😔'} today.`,
     });
+    
+    // Save mood to localStorage for Progress page to use
+    const today = new Date().toISOString().split('T')[0];
+    const moodHistory = JSON.parse(localStorage.getItem('moodHistory') || '{}');
+    moodHistory[today] = mood;
+    localStorage.setItem('moodHistory', JSON.stringify(moodHistory));
   };
 
   return (

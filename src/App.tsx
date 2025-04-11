@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import AiBuddyChat from "./pages/AiBuddyChat";
 import FocusMode from "./pages/FocusMode";
 import Journal from "./pages/Journal";
+import LearningZone from "./pages/LearningZone";
+import SelfCare from "./pages/SelfCare";
+import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +58,21 @@ const AppRoutes = () => {
       <Route path="/journal" element={
         <ProtectedRoute>
           <Journal />
+        </ProtectedRoute>
+      } />
+      <Route path="/learn" element={
+        <ProtectedRoute>
+          <LearningZone />
+        </ProtectedRoute>
+      } />
+      <Route path="/self-care" element={
+        <ProtectedRoute>
+          <SelfCare />
+        </ProtectedRoute>
+      } />
+      <Route path="/progress" element={
+        <ProtectedRoute>
+          <Progress />
         </ProtectedRoute>
       } />
       

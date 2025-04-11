@@ -1,101 +1,97 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Send, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getAIResponse } from '../utils/aiUtils';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  followUpQuestions?: string[];
 }
 
-// Placeholder AI responses based on keywords or patterns
-const getAIResponse = (message: string): string => {
-  const lowerMessage = message.toLowerCase();
-  
-  if (lowerMessage.includes('anxious') || lowerMessage.includes('anxiety') || lowerMessage.includes('stressed')) {
-    return "I understand feeling anxious can be overwhelming. Try taking a few deep breaths - inhale for 4 counts, hold for 4, and exhale for 6. Remember that these feelings are temporary, and you have overcome challenges before. Would you like to talk more about what's causing your anxiety?";
-  }
-  
-  if (lowerMessage.includes('social media') || lowerMessage.includes('addicted') || lowerMessage.includes('distracted')) {
-    return "Social media addiction is common among students. Consider setting specific time blocks for checking apps, and use focus apps to block distractions during study time. What specific apps do you find most distracting?";
-  }
-  
-  if (lowerMessage.includes('motivation') || lowerMessage.includes('lazy') || lowerMessage.includes('procrastinate')) {
-    return "Finding motivation can be challenging! Try breaking your tasks into smaller, manageable chunks and reward yourself after completing each one. The Pomodoro technique in our Focus section might help too. What's one small task you could start with today?";
-  }
-  
-  if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-    return "Hello! I'm your AI buddy, here to support your student journey. How are you feeling today? Is there something specific you'd like to talk about?";
-  }
-  
-  if (lowerMessage.includes('english') || lowerMessage.includes('speak') || lowerMessage.includes('communication')) {
-    return "Improving English communication takes practice and patience. Try reading articles aloud, watching English shows with subtitles, or finding a conversation partner. Our English Practice section has more structured exercises too. What aspect of English communication challenges you most?";
-  }
-  
-  if (lowerMessage.includes('lonely') || lowerMessage.includes('alone') || lowerMessage.includes('no friends')) {
-    return "Feeling lonely is a common experience, especially in college. Consider joining a club related to your interests, attending campus events, or volunteering. Sometimes small interactions, like asking a classmate about an assignment, can be the first step to meaningful connections. What's one social situation where you feel most comfortable?";
-  }
-  
-  // Default responses for when no pattern is matched
-  const defaultResponses = [
-    "I'm here to support you. Could you tell me more about that?",
-    "That's interesting! How does that make you feel?",
-    "I understand. What do you think would help in this situation?",
-    "Thank you for sharing that with me. Would you like some suggestions or just someone to listen?",
-    "I'm here to help you navigate this. What would be a small step forward for you?"
-  ];
-  
-  return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-};
-
 const AiBuddyChat = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hi there! I'm your AI buddy, here to support you through your student journey. How are you feeling today?",
-      sender: 'ai',
-      timestamp: new Date()
+  const [messages, setMessages] = useState<Message[]>(() => {
+    // Try to get messages from localStorage
+    const savedMessages = localStorage.getItem('aiBuddyChatMessages');
+    if (savedMessages) {
+      try {
+        // Parse the saved messages and convert timestamp strings back to Date objects
+        const parsed = JSON.parse(savedMessages);
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      } catch (error) {
+        console.error('Error parsing saved messages:', error);
+      }
     }
-  ]);
+    
+    // Default welcome message
+    return [
+      {
+        id: '1',
+        text: "Hi there! I'm your AI buddy, here to support you through your student journey. How are you feeling today?",
+        sender: 'ai',
+        timestamp: new Date(),
+        followUpQuestions: [
+          "Would you like some tips on studying effectively?",
+          "Are you dealing with stress or anxiety?",
+          "Do you need help with time management?"
+        ]
+      }
+    ];
+  });
+  
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  
+  // Save messages to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('aiBuddyChatMessages', JSON.stringify(messages));
+  }, [messages]);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async (text: string = inputValue) => {
+    if (!text.trim()) return;
     
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: text.trim(),
       sender: 'user',
       timestamp: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setSelectedQuestion(null);
     setIsLoading(true);
     
-    // Simulate AI response delay
+    // Get AI response with slight delay to simulate thinking
     setTimeout(() => {
+      const aiResponseData = getAIResponse(userMessage.text);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: getAIResponse(userMessage.text),
+        text: aiResponseData.text,
+        followUpQuestions: aiResponseData.followUpQuestions,
         sender: 'ai',
         timestamp: new Date()
       };
@@ -103,6 +99,11 @@ const AiBuddyChat = () => {
       setMessages(prev => [...prev, aiResponse]);
       setIsLoading(false);
     }, 1000);
+  };
+
+  const handleQuestionClick = (question: string) => {
+    setSelectedQuestion(question);
+    setInputValue(question);
   };
 
   return (
@@ -133,10 +134,34 @@ const AiBuddyChat = () => {
                         : 'bg-white border border-purple-light/50 text-foreground'
                     }`}
                   >
-                    <p>{message.text}</p>
+                    <p className="whitespace-pre-line">{message.text}</p>
                     <p className="text-xs opacity-70 mt-1">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
+                    
+                    {/* Follow-up questions */}
+                    {message.sender === 'ai' && message.followUpQuestions && message.followUpQuestions.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground">Suggested questions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {message.followUpQuestions.map((question, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              className={`text-xs text-left ${
+                                selectedQuestion === question 
+                                  ? 'bg-purple-light/20 border-purple' 
+                                  : 'border-purple-light/30'
+                              }`}
+                              onClick={() => handleQuestionClick(question)}
+                            >
+                              {question}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
