@@ -15,9 +15,69 @@ interface Reminder {
   description: string;
   time: string;
   enabled: boolean;
-  iconType: string; // Changed from icon React.ReactNode to string type for serialization
+  iconType: string;
   category: 'health' | 'social' | 'values';
 }
+
+// Helper function to get default reminders - defined before it's used
+const getDefaultReminders = (): Reminder[] => {
+  return [
+    {
+      id: '1',
+      title: 'Drink Water',
+      description: 'Stay hydrated throughout the day',
+      time: '09:00',
+      enabled: true,
+      iconType: 'coffee',
+      category: 'health'
+    },
+    {
+      id: '2',
+      title: 'Call Parents',
+      description: 'Take time to connect with family',
+      time: '18:00',
+      enabled: true,
+      iconType: 'phone',
+      category: 'social'
+    },
+    {
+      id: '3',
+      title: 'Meditate',
+      description: '10 minutes of mindfulness',
+      time: '07:00',
+      enabled: true,
+      iconType: 'heart',
+      category: 'health'
+    },
+    {
+      id: '4',
+      title: 'Read a Book',
+      description: 'Expand your mind with reading',
+      time: '21:00',
+      enabled: false,
+      iconType: 'book',
+      category: 'values'
+    },
+    {
+      id: '5',
+      title: 'Go to Bed',
+      description: 'Ensure you get enough sleep',
+      time: '22:00',
+      enabled: true,
+      iconType: 'moon',
+      category: 'health'
+    },
+    {
+      id: '6',
+      title: 'Morning Walk',
+      description: 'Start your day with fresh air',
+      time: '06:30',
+      enabled: false,
+      iconType: 'sun',
+      category: 'health'
+    },
+  ];
+};
 
 const SelfCare = () => {
   const navigate = useNavigate();
@@ -38,66 +98,6 @@ const SelfCare = () => {
     // Default reminders
     return getDefaultReminders();
   });
-
-  // Helper function to get default reminders
-  const getDefaultReminders = (): Reminder[] => {
-    return [
-      {
-        id: '1',
-        title: 'Drink Water',
-        description: 'Stay hydrated throughout the day',
-        time: '09:00',
-        enabled: true,
-        iconType: 'coffee',
-        category: 'health'
-      },
-      {
-        id: '2',
-        title: 'Call Parents',
-        description: 'Take time to connect with family',
-        time: '18:00',
-        enabled: true,
-        iconType: 'phone',
-        category: 'social'
-      },
-      {
-        id: '3',
-        title: 'Meditate',
-        description: '10 minutes of mindfulness',
-        time: '07:00',
-        enabled: true,
-        iconType: 'heart',
-        category: 'health'
-      },
-      {
-        id: '4',
-        title: 'Read a Book',
-        description: 'Expand your mind with reading',
-        time: '21:00',
-        enabled: false,
-        iconType: 'book',
-        category: 'values'
-      },
-      {
-        id: '5',
-        title: 'Go to Bed',
-        description: 'Ensure you get enough sleep',
-        time: '22:00',
-        enabled: true,
-        iconType: 'moon',
-        category: 'health'
-      },
-      {
-        id: '6',
-        title: 'Morning Walk',
-        description: 'Start your day with fresh air',
-        time: '06:30',
-        enabled: false,
-        iconType: 'sun',
-        category: 'health'
-      },
-    ];
-  };
 
   // Helper function to get icon component based on iconType
   const getIconComponent = (iconType: string) => {
@@ -121,9 +121,18 @@ const SelfCare = () => {
 
   // Save reminders to localStorage when they change
   useEffect(() => {
-    // Ensure we're only saving serializable data
-    localStorage.setItem('selfCareReminders', JSON.stringify(reminders));
-  }, [reminders]);
+    try {
+      // We're saving just the serializable data
+      localStorage.setItem('selfCareReminders', JSON.stringify(reminders));
+    } catch (error) {
+      console.error("Error saving reminders to localStorage:", error);
+      toast({
+        title: "Error saving reminders",
+        description: "Your reminders couldn't be saved. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [reminders, toast]);
 
   const toggleReminder = (id: string) => {
     setReminders(prevReminders => 

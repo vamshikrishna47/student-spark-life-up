@@ -10,6 +10,9 @@ interface AiResponse {
 export const getAIResponse = (message: string): AiResponse => {
   const lowerMessage = message.toLowerCase();
   
+  // Process the user's message and provide a relevant response
+  // First check for specific topics/keywords
+  
   // Anxiety and stress responses
   if (
     lowerMessage.includes('anxious') || 
@@ -96,47 +99,28 @@ export const getAIResponse = (message: string): AiResponse => {
     };
   }
   
-  // English communication
+  // Study techniques
   if (
-    lowerMessage.includes('english') || 
-    lowerMessage.includes('speak') || 
-    lowerMessage.includes('communication') ||
-    lowerMessage.includes('language') ||
-    lowerMessage.includes('accent') ||
-    lowerMessage.includes('pronunciation') ||
-    lowerMessage.includes('grammar')
+    lowerMessage.includes('study') || 
+    lowerMessage.includes('exam') || 
+    lowerMessage.includes('test') ||
+    lowerMessage.includes('assignment') ||
+    lowerMessage.includes('homework') ||
+    lowerMessage.includes('learning') ||
+    lowerMessage.includes('memorize') ||
+    lowerMessage.includes('remember')
   ) {
     return {
-      text: "Improving English communication is a journey that requires consistent practice. Here are effective strategies: 1) Practice speaking daily, even if just to yourself, 2) Watch English content with subtitles, then without, 3) Read articles aloud, 4) Record yourself speaking and listen back, 5) Find a language exchange partner online. Which aspect of English communication challenges you most - speaking, listening, reading, or writing?",
+      text: "Effective studying starts with understanding your learning style. Try these evidence-based techniques: 1) Spaced repetition - review material at increasing intervals, 2) Active recall - test yourself instead of rereading, 3) The Pomodoro Technique - 25 minutes of focused work followed by a 5-minute break, 4) Explain concepts in your own words. What subject are you currently studying?",
       followUpQuestions: [
-        "Would you like to practice some conversation with me?",
-        "Have you tried joining any English speaking clubs?",
-        "What English content (shows, podcasts, books) do you enjoy?"
+        "Have you tried any particular study methods before?",
+        "Do you prefer studying alone or in groups?",
+        "What's your biggest challenge when trying to study?"
       ]
     };
   }
-  
-  // Loneliness and social challenges
-  if (
-    lowerMessage.includes('lonely') || 
-    lowerMessage.includes('alone') || 
-    lowerMessage.includes('no friends') ||
-    lowerMessage.includes('make friends') ||
-    lowerMessage.includes('shy') ||
-    lowerMessage.includes('introvert') ||
-    lowerMessage.includes('isolated')
-  ) {
-    return {
-      text: "Feeling lonely is common, especially in college where social circles are constantly changing. Remember that most meaningful friendships start with shared interests or regular interaction. Consider joining a club related to your interests, volunteering, or participating in study groups. Even small interactions, like asking someone about an assignment, can be the first step toward connection. What's one social situation where you feel most comfortable?",
-      followUpQuestions: [
-        "What interests or hobbies could connect you with like-minded people?",
-        "Have you tried any campus clubs or online communities?",
-        "Would you be comfortable reaching out to a classmate to study together?"
-      ]
-    };
-  }
-  
-  // Learning technology
+
+  // Technology learning
   if (
     lowerMessage.includes('coding') || 
     lowerMessage.includes('programming') || 
@@ -163,50 +147,90 @@ export const getAIResponse = (message: string): AiResponse => {
     };
   }
   
-  // Health and wellness
+  // English improvement
   if (
-    lowerMessage.includes('health') || 
-    lowerMessage.includes('tired') || 
-    lowerMessage.includes('sleep') ||
-    lowerMessage.includes('exercise') ||
-    lowerMessage.includes('diet') ||
-    lowerMessage.includes('nutrition') ||
-    lowerMessage.includes('eating') ||
-    lowerMessage.includes('workout')
+    lowerMessage.includes('english') || 
+    lowerMessage.includes('speak') || 
+    lowerMessage.includes('communication') ||
+    lowerMessage.includes('language') ||
+    lowerMessage.includes('accent') ||
+    lowerMessage.includes('pronunciation') ||
+    lowerMessage.includes('grammar')
   ) {
     return {
-      text: "Your physical wellbeing directly impacts your academic performance. As a student, prioritize these basics: 1) Aim for 7-9 hours of consistent sleep, 2) Stay hydrated throughout the day, 3) Include protein and vegetables in your meals, 4) Find exercise you enjoy, even if it's just a 20-minute walk, 5) Take study breaks every 50-90 minutes. Our Self-Care section can help you set reminders for these habits. Which area of health would you like to improve first?",
+      text: "Improving English communication is a journey that requires consistent practice. Here are effective strategies: 1) Practice speaking daily, even if just to yourself, 2) Watch English content with subtitles, then without, 3) Read articles aloud, 4) Record yourself speaking and listen back, 5) Find a language exchange partner online. Which aspect of English communication challenges you most - speaking, listening, reading, or writing?",
       followUpQuestions: [
-        "How's your sleep quality been lately?",
-        "Do you have any physical activity you enjoy?",
-        "What's your biggest challenge in maintaining healthy habits?"
+        "Would you like to practice some conversation with me?",
+        "Have you tried joining any English speaking clubs?",
+        "What English content (shows, podcasts, books) do you enjoy?"
       ]
     };
   }
-  
-  // Default responses that encourage further conversation
-  const defaultResponses = [
-    {
-      text: "I'm here to support you. Could you tell me more specifically what's on your mind? I can help with study techniques, managing stress, improving focus, or just be someone to talk to.",
-      followUpQuestions: ["Are you feeling stressed about academics?", "Would you like some productivity tips?", "How's your overall wellbeing right now?"]
-    },
-    {
-      text: "I understand college life can be challenging in many ways. What particular aspect are you finding difficult right now? The more specific you can be, the better I can tailor my support.",
-      followUpQuestions: ["Is there a particular course that's challenging you?", "Are you dealing with time management issues?", "Would you like suggestions for balancing your responsibilities?"]
-    },
-    {
-      text: "I'm your AI buddy, here to help with both academic and personal growth. What's something specific you'd like guidance on today? I can provide tips, resources, or just listen.",
-      followUpQuestions: ["How are your classes going this semester?", "Are you taking care of your wellbeing?", "Is there a skill you're trying to develop?"]
-    },
-    {
-      text: "Thanks for reaching out! As your student companion, I'm here to support your journey. To help you best, could you share more about what's currently on your mind or what you're hoping to achieve?",
-      followUpQuestions: ["What's your biggest challenge right now?", "Are you looking for study strategies?", "Would you like to talk about career planning?"]
-    },
-    {
-      text: "I'm here to be your supportive AI buddy throughout your student journey. To help you meaningfully, could you share what specific area you'd like support with today?",
-      followUpQuestions: ["How are you feeling about your academic progress?", "Are you dealing with any stress or anxiety?", "Would you like to discuss effective learning strategies?"]
-    }
-  ];
-  
-  return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+
+  // For other inputs, provide a general but thoughtful response that encourages further conversation
+  return {
+    text: `I see you mentioned "${message}". Tell me more about what's on your mind. I'm here to help with any challenges you're facing as a student - whether it's academic pressure, social concerns, or personal growth. The more specific you can be, the better I can tailor my support to your needs.`,
+    followUpQuestions: [
+      "What specific aspect of this would you like help with?",
+      "How has this been affecting your studies or well-being?",
+      "What have you tried so far to address this?"
+    ]
+  };
 };
+
+// Note: To integrate with Gemini API in the future, we would implement a function like this:
+/*
+export const getGeminiResponse = async (message: string): Promise<AiResponse> => {
+  try {
+    const apiKey = "AIzaSyCmZQUFSE7rDHMCKD7yNvYIBwc8QUsD3IE"; // API key from user
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `You are a supportive AI buddy for a college student. 
+                       Respond to this message in a helpful, empathetic way: "${message}"
+                       Provide 3 follow-up questions at the end of your response.`
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 1024,
+        }
+      }),
+    });
+    
+    const data = await response.json();
+    
+    // Parse response and format it
+    if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const text = data.candidates[0].content.parts[0].text;
+      
+      // Extract follow-up questions (this is a simplistic approach)
+      const lines = text.split('\n');
+      const followUpQuestions = lines
+        .filter(line => line.includes('?') && line.length < 100)
+        .slice(-3);
+      
+      return {
+        text: text.split('Follow-up questions:')[0].trim(),
+        followUpQuestions: followUpQuestions.length > 0 ? followUpQuestions : undefined
+      };
+    }
+    
+    throw new Error('Invalid response format from Gemini API');
+  } catch (error) {
+    console.error("Error calling Gemini API:", error);
+    return getAIResponse(message); // Fallback to local responses
+  }
+};
+*/

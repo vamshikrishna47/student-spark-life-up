@@ -57,7 +57,11 @@ const AiBuddyChat = () => {
   
   // Save messages to localStorage when they change
   useEffect(() => {
-    localStorage.setItem('aiBuddyChatMessages', JSON.stringify(messages));
+    try {
+      localStorage.setItem('aiBuddyChatMessages', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Error saving messages to localStorage:', error);
+    }
   }, [messages]);
   
   const scrollToBottom = () => {
@@ -86,18 +90,37 @@ const AiBuddyChat = () => {
     
     // Get AI response with slight delay to simulate thinking
     setTimeout(() => {
-      const aiResponseData = getAIResponse(userMessage.text);
-      
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponseData.text,
-        followUpQuestions: aiResponseData.followUpQuestions,
-        sender: 'ai',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      setIsLoading(false);
+      try {
+        const aiResponseData = getAIResponse(userMessage.text);
+        
+        const aiResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: aiResponseData.text,
+          followUpQuestions: aiResponseData.followUpQuestions,
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, aiResponse]);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error generating AI response:", error);
+        // Provide a fallback response if something goes wrong
+        const fallbackResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "I'm having trouble processing that right now. Could you try rephrasing or asking something else?",
+          sender: 'ai',
+          timestamp: new Date(),
+          followUpQuestions: [
+            "How are you feeling today?",
+            "Would you like to talk about something else?",
+            "Do you need help with your studies?"
+          ]
+        };
+        
+        setMessages(prev => [...prev, fallbackResponse]);
+        setIsLoading(false);
+      }
     }, 1000);
   };
 
