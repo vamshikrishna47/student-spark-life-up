@@ -5,9 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Clock, Coffee, Heart, Phone, Book, Moon, Sun } from 'lucide-react';
+import { 
+  ArrowLeft, Clock, Coffee, Heart, Phone, Book, 
+  Moon, Sun, BellRing, Bell 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  isNotificationSupported, 
+  requestNotificationPermission,
+  checkNotificationPermission,
+  scheduleNotification,
+  cancelScheduledNotification
+} from '@/utils/notificationUtils';
 
 interface Reminder {
   id: string;
@@ -17,6 +27,7 @@ interface Reminder {
   enabled: boolean;
   iconType: string;
   category: 'health' | 'social' | 'values';
+  notificationId?: number; // Store the timer ID for scheduled notifications
 }
 
 // Helper function to get default reminders - defined before it's used
@@ -82,6 +93,7 @@ const getDefaultReminders = (): Reminder[] => {
 const SelfCare = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   
   const [reminders, setReminders] = useState<Reminder[]>(() => {
     const savedReminders = localStorage.getItem('selfCareReminders');
@@ -119,11 +131,48 @@ const SelfCare = () => {
     }
   };
 
+  // Check notification permission on component mount
+  useEffect(() => {
+    const checkPermission = async () => {
+      const supported = isNotificationSupported();
+      if (!supported) {
+        console.log("Browser doesn't support notifications");
+        return;
+      }
+      
+      const permissionGranted = checkNotificationPermission();
+      setNotificationsEnabled(permissionGranted);
+      
+      if (permissionGranted) {
+        // Schedule notifications for enabled reminders
+        scheduleAllNotifications();
+      }
+    };
+    
+    checkPermission();
+    
+    // Cleanup function to cancel all notifications when component unmounts
+    return () => {
+      reminders.forEach(reminder => {
+        if (reminder.notificationId) {
+          cancelScheduledNotification(reminder.notificationId);
+        }
+      });
+    };
+  }, []);
+
   // Save reminders to localStorage when they change
   useEffect(() => {
     try {
-      // We're saving just the serializable data
-      localStorage.setItem('selfCareReminders', JSON.stringify(reminders));
+      // We're saving the serializable data
+      // Convert to a plain object without circular references
+      const serializableReminders = reminders.map(reminder => ({
+        ...reminder,
+        // Don't include non-serializable properties
+        icon: undefined
+      }));
+      
+      localStorage.setItem('selfCareReminders', JSON.stringify(serializableReminders));
     } catch (error) {
       console.error("Error saving reminders to localStorage:", error);
       toast({
@@ -134,11 +183,102 @@ const SelfCare = () => {
     }
   }, [reminders, toast]);
 
+  // Schedule notifications for all enabled reminders
+  const scheduleAllNotifications = () => {
+    if (!notificationsEnabled) return;
+    
+    // Cancel any existing notifications first
+    reminders.forEach(reminder => {
+      if (reminder.notificationId) {
+        cancelScheduledNotification(reminder.notificationId);
+      }
+    });
+    
+    // Schedule new notifications for enabled reminders
+    const updatedReminders = reminders.map(reminder => {
+      if (!reminder.enabled) return reminder;
+      
+      const [hours, minutes] = reminder.time.split(':').map(Number);
+      const now = new Date();
+      const scheduledTime = new Date();
+      
+      scheduledTime.setHours(hours, minutes, 0, 0);
+      
+      // If time has already passed today, schedule for tomorrow
+      if (scheduledTime <= now) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+      }
+      
+      const notificationId = scheduleNotification(
+        reminder.title,
+        { 
+          body: reminder.description,
+          icon: '/favicon.ico'
+        },
+        scheduledTime
+      );
+      
+      return {
+        ...reminder,
+        notificationId
+      };
+    });
+    
+    setReminders(updatedReminders);
+  };
+
+  // Request notification permission from user
+  const handleEnableNotifications = async () => {
+    const permissionGranted = await requestNotificationPermission();
+    
+    if (permissionGranted) {
+      setNotificationsEnabled(true);
+      scheduleAllNotifications();
+      
+      toast({
+        title: "Notifications enabled",
+        description: "You'll receive reminders at the scheduled times",
+      });
+    } else {
+      toast({
+        title: "Notifications blocked",
+        description: "Please enable notifications in your browser settings to receive reminders",
+        variant: "destructive"
+      });
+    }
+  };
+
   const toggleReminder = (id: string) => {
     setReminders(prevReminders => 
       prevReminders.map(reminder => {
         if (reminder.id === id) {
           const updatedReminder = { ...reminder, enabled: !reminder.enabled };
+          
+          // Cancel existing notification if it exists
+          if (reminder.notificationId) {
+            cancelScheduledNotification(reminder.notificationId);
+          }
+          
+          // Schedule new notification if enabled
+          if (updatedReminder.enabled && notificationsEnabled) {
+            const [hours, minutes] = updatedReminder.time.split(':').map(Number);
+            const scheduledTime = new Date();
+            scheduledTime.setHours(hours, minutes, 0, 0);
+            
+            // If time has already passed today, schedule for tomorrow
+            if (scheduledTime <= new Date()) {
+              scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+            
+            updatedReminder.notificationId = scheduleNotification(
+              updatedReminder.title,
+              { 
+                body: updatedReminder.description,
+                icon: '/favicon.ico'
+              },
+              scheduledTime
+            );
+          }
           
           // Show toast notification
           toast({
@@ -157,7 +297,35 @@ const SelfCare = () => {
     setReminders(prevReminders => 
       prevReminders.map(reminder => {
         if (reminder.id === id) {
-          return { ...reminder, time: newTime };
+          const updatedReminder = { ...reminder, time: newTime };
+          
+          // Reschedule notification if enabled
+          if (updatedReminder.enabled && notificationsEnabled) {
+            // Cancel existing notification if it exists
+            if (reminder.notificationId) {
+              cancelScheduledNotification(reminder.notificationId);
+            }
+            
+            const [hours, minutes] = newTime.split(':').map(Number);
+            const scheduledTime = new Date();
+            scheduledTime.setHours(hours, minutes, 0, 0);
+            
+            // If time has already passed today, schedule for tomorrow
+            if (scheduledTime <= new Date()) {
+              scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+            
+            updatedReminder.notificationId = scheduleNotification(
+              updatedReminder.title,
+              { 
+                body: updatedReminder.description,
+                icon: '/favicon.ico'
+              },
+              scheduledTime
+            );
+          }
+          
+          return updatedReminder;
         }
         return reminder;
       })
@@ -191,6 +359,33 @@ const SelfCare = () => {
               <p className="text-muted-foreground">
                 Set reminders for important self-care activities and build healthy habits
               </p>
+              
+              {/* Notifications permission button */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BellRing className="h-5 w-5 text-purple" />
+                  <span>Push Notifications</span>
+                </div>
+                {isNotificationSupported() ? (
+                  notificationsEnabled ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-green-600">Enabled</span>
+                      <Bell className="h-5 w-5 text-green-600" />
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleEnableNotifications}
+                      className="text-purple border-purple hover:bg-purple/10"
+                    >
+                      Enable Notifications
+                    </Button>
+                  )
+                ) : (
+                  <span className="text-sm text-muted-foreground">Not supported in this browser</span>
+                )}
+              </div>
             </CardHeader>
           </Card>
 
